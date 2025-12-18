@@ -12,6 +12,8 @@ public class App {
                 "Jawan_07"
             );
 
+            con.setAutoCommit(true);
+
             Scanner sc = new Scanner(System.in);
 
             while (true) {
@@ -31,19 +33,27 @@ public class App {
                     System.out.print("EMP_ID: ");
                     int id = sc.nextInt();
                     sc.nextLine();
+
                     System.out.print("EMP_NAME: ");
                     String name = sc.nextLine();
+
                     System.out.print("DEPARTMENT: ");
                     String dept = sc.nextLine();
+
                     System.out.print("SALARY: ");
                     int salary = sc.nextInt();
+
                     System.out.print("CONTACT: ");
                     long contact = sc.nextLong();
                     sc.nextLine();
+
                     System.out.print("EMAIL: ");
                     String email = sc.nextLine();
 
-                    String sql = "INSERT INTO EMPLOYEE VALUES (?, ?, ?, ?, ?, ?, TRUE)";
+                    String sql =
+                        "INSERT INTO EMPLOYEE (EMP_ID, EMP_NAME, DEPARTMENT, SALARY, CONTACT, EMAIL, STATUS) " +
+                        "VALUES (?, ?, ?, ?, ?, ?, ?)";
+
                     PreparedStatement ps = con.prepareStatement(sql);
                     ps.setInt(1, id);
                     ps.setString(2, name);
@@ -51,13 +61,14 @@ public class App {
                     ps.setInt(4, salary);
                     ps.setLong(5, contact);
                     ps.setString(6, email);
+                    ps.setBoolean(7, true);
                     ps.executeUpdate();
 
-                    System.out.println("Employee Added");
+                    System.out.println("Employee Added Successfully");
                 }
 
                 else if (choice == 2) {
-                    String sql = "SELECT * FROM EMPLOYEE WHERE STATUS = TRUE";
+                    String sql = "SELECT * FROM EMPLOYEE";
                     PreparedStatement ps = con.prepareStatement(sql);
                     ResultSet rs = ps.executeQuery();
 
@@ -67,7 +78,9 @@ public class App {
                             rs.getString("EMP_NAME") + " | " +
                             rs.getString("DEPARTMENT") + " | " +
                             rs.getInt("SALARY") + " | " +
-                            rs.getString("EMAIL")
+                            rs.getLong("CONTACT") + " | " +
+                            rs.getString("EMAIL") + " | " +
+                            rs.getBoolean("STATUS")
                         );
                     }
                 }
@@ -83,6 +96,7 @@ public class App {
 
                     if (rs.next()) {
                         System.out.println(
+                            rs.getInt("EMP_ID") + " | " +
                             rs.getString("EMP_NAME") + " | " +
                             rs.getString("DEPARTMENT") + " | " +
                             rs.getInt("SALARY")
@@ -104,7 +118,7 @@ public class App {
                     ps.setInt(2, id);
                     ps.executeUpdate();
 
-                    System.out.println("Employee Updated");
+                    System.out.println("Employee Updated Successfully");
                 }
 
                 else if (choice == 5) {
@@ -121,7 +135,7 @@ public class App {
 
                 else if (choice == 6) {
                     sc.nextLine();
-                    System.out.print("Department: ");
+                    System.out.print("Enter Department: ");
                     String dept = sc.nextLine();
 
                     String sql = "SELECT EMP_NAME, SALARY FROM EMPLOYEE WHERE DEPARTMENT = ?";
@@ -144,9 +158,9 @@ public class App {
 
                     if (rs.next()) {
                         System.out.println(
-                            "Min: " + rs.getInt(1) +
-                            " Max: " + rs.getInt(2) +
-                            " Avg: " + rs.getDouble(3)
+                            "Min Salary: " + rs.getInt(1) +
+                            " | Max Salary: " + rs.getInt(2) +
+                            " | Avg Salary: " + rs.getDouble(3)
                         );
                     }
                 }
@@ -154,6 +168,7 @@ public class App {
                 else if (choice == 8) {
                     con.close();
                     sc.close();
+                    System.out.println("Exited Successfully");
                     break;
                 }
             }
