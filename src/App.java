@@ -6,14 +6,15 @@ public class App {
     public static void main(String[] args) {
 
         try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+
             Connection con = DriverManager.getConnection(
-                "jdbc:mysql://localhost:3306/employeedb?useSSL=false&allowPublicKeyRetrieval=true",
+                "jdbc:mysql://localhost:3306/employeedb?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC",
                 "root",
                 "Jawan_07"
             );
 
             con.setAutoCommit(true);
-
             Scanner sc = new Scanner(System.in);
 
             while (true) {
@@ -68,9 +69,8 @@ public class App {
                 }
 
                 else if (choice == 2) {
-                    String sql = "SELECT * FROM EMPLOYEE";
-                    PreparedStatement ps = con.prepareStatement(sql);
-                    ResultSet rs = ps.executeQuery();
+                    String sql = "SELECT * FROM EMPLOYEE WHERE STATUS = TRUE";
+                    ResultSet rs = con.createStatement().executeQuery(sql);
 
                     while (rs.next()) {
                         System.out.println(
@@ -78,9 +78,7 @@ public class App {
                             rs.getString("EMP_NAME") + " | " +
                             rs.getString("DEPARTMENT") + " | " +
                             rs.getInt("SALARY") + " | " +
-                            rs.getLong("CONTACT") + " | " +
-                            rs.getString("EMAIL") + " | " +
-                            rs.getBoolean("STATUS")
+                            rs.getString("EMAIL")
                         );
                     }
                 }
@@ -152,15 +150,14 @@ public class App {
                 }
 
                 else if (choice == 7) {
-                    String sql = "SELECT MIN(SALARY), MAX(SALARY), AVG(SALARY) FROM EMPLOYEE";
-                    PreparedStatement ps = con.prepareStatement(sql);
-                    ResultSet rs = ps.executeQuery();
+                    ResultSet rs = con.createStatement()
+                        .executeQuery("SELECT MIN(SALARY), MAX(SALARY), AVG(SALARY) FROM EMPLOYEE");
 
                     if (rs.next()) {
                         System.out.println(
-                            "Min Salary: " + rs.getInt(1) +
-                            " | Max Salary: " + rs.getInt(2) +
-                            " | Avg Salary: " + rs.getDouble(3)
+                            "Min: " + rs.getInt(1) +
+                            " | Max: " + rs.getInt(2) +
+                            " | Avg: " + rs.getDouble(3)
                         );
                     }
                 }
