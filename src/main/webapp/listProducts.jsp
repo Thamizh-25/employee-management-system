@@ -1,177 +1,320 @@
-<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ page import="java.sql.*, java.util.*, java.net.URLEncoder" %>
+<%@ page import="java.sql.*" %>
 <%@ page import="com.sqwms.util.DBConnection" %>
 
-<%
-/* --- Server side: flash messages & search --- */
-String flashMsg = (String) session.getAttribute("flashMsg");
-String flashError = (String) session.getAttribute("flashError");
-if (flashMsg != null) session.removeAttribute("flashMsg");
-if (flashError != null) session.removeAttribute("flashError");
-
-/* search */
-String q = request.getParameter("q");
-boolean hasFilter = (q != null && !q.trim().isEmpty());
-String likeParam = hasFilter ? ("%" + q.trim().toLowerCase() + "%") : null;
-
-/* load all matching rows (no pagination) */
-List<Map<String,Object>> rows = new ArrayList<>();
-Connection conn = null;
-PreparedStatement ps = null;
-ResultSet rs = null;
-try {
-    conn = DBConnection.getConnection();
-    if (conn != null) {
-        String sql = "SELECT id, sku, name, quantity, qr_path, qr_text, created_at, updated_at FROM products"
-                   + (hasFilter ? " WHERE LOWER(sku) LIKE ? OR LOWER(name) LIKE ? " : "")
-                   + " ORDER BY id DESC";
-        ps = conn.prepareStatement(sql);
-        int idx = 1;
-        if (hasFilter) { ps.setString(idx++, likeParam); ps.setString(idx++, likeParam); }
-        rs = ps.executeQuery();
-
-        while (rs.next()) {
-            Map<String,Object> r = new HashMap<>();
-            r.put("id", rs.getInt("id"));
-            r.put("sku", rs.getString("sku"));
-            r.put("name", rs.getString("name"));
-            r.put("quantity", rs.getInt("quantity"));
-            r.put("qr_path", rs.getString("qr_path"));
-            r.put("created_at", rs.getString("created_at"));
-            r.put("updated_at", rs.getString("updated_at"));
-            rows.add(r);
-        }
-    } else {
-        flashError = "Unable to connect to database.";
-    }
-} catch (Exception e) {
-    flashError = "Error loading products: " + e.getMessage();
-    e.printStackTrace();
-} finally {
-    try { if (rs != null) rs.close(); } catch (Exception _e) {}
-    try { if (ps != null) ps.close(); } catch (Exception _e) {}
-    try { if (conn != null) conn.close(); } catch (Exception _e) {}
-}
-%>
-
-<!doctype html>
+<!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <title>Product List</title>
-  <style>
-    body{font-family:Arial;background:#f5f5f5;margin:0;padding:20px}
-    .container{max-width:1200px;margin:0 auto}
-    table{width:100%;border-collapse:collapse;background:#fff}
-    th,td{padding:10px;border-bottom:1px solid #e6e6e6;text-align:left;vertical-align:middle}
-    th{background:#007bff;color:#fff}
-    img.qr{width:80px;height:80px;object-fit:cover;border:1px solid #ddd;padding:4px;background:#fff}
-    .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-    .btn{display:inline-block;padding:8px 12px;background:#007bff;color:#fff;text-decoration:none;border-radius:6px}
-    .muted{color:#666;font-size:0.9rem}
-    .searchbar{display:flex;align-items:center;gap:8px}
-    .smallbtn{padding:8px 12px;border-radius:6px;background:#28a745;color:#fff;border:none;cursor:pointer}
-    .action-btn{padding:8px 12px;border-radius:6px;border:none;cursor:pointer;margin-right:8px;text-decoration:none;display:inline-block}
-    .edit-btn{background:#17a2b8;color:#fff}
-    .delete-btn{background:#dc3545;color:#fff}
-    .download-btn{background:#6c757d;color:#fff}
-    .regenerate-btn{background:#ffc107;color:#000}
-    .pager a{margin:0 6px;text-decoration:none;color:#007bff}
-    .pager strong{margin:0 6px}
-    .flash-success{background:#d4edda;color:#155724;padding:10px;border-radius:6px;margin-bottom:12px}
-    .flash-error{background:#f8d7da;color:#721c24;padding:10px;border-radius:6px;margin-bottom:12px}
-  </style>
+<title>SmartQR WMS - Product Inventory</title>
+
+<!-- Font Awesome -->
+<link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+
+<style>
+/* ---------- BASE ---------- */
+body{
+  font-family:Arial, sans-serif;
+  background:#f5f7fb;
+  margin:0;
+  padding:20px;
+}
+
+/* ---------- HEADER ---------- */
+.header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:20px;
+}
+.brand{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-size:20px;
+  font-weight:bold;
+}
+.logo{
+  width:42px;
+  height:42px;
+  border-radius:50%;
+  background:#0d6efd;
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.add-btn{
+  background:#0dcaf0;
+  color:#fff;
+  padding:10px 16px;
+  border-radius:8px;
+  text-decoration:none;
+  font-weight:bold;
+  white-space:nowrap;
+}
+
+/* ---------- DASHBOARD ---------- */
+.cards{
+  display:flex;
+  gap:20px;
+  margin-bottom:20px;
+}
+.card{
+  padding:16px;
+  border-radius:10px;
+  min-width:160px;
+}
+.total{background:#e7f3ff}
+.low{background:#fff3cd}
+.critical{background:#f8d7da}
+.card span{
+  font-size:26px;
+  font-weight:bold;
+}
+
+/* ---------- SEARCH ---------- */
+.search-box{
+  margin-bottom:20px;
+}
+.search-box input{
+  padding:10px;
+  width:260px;
+}
+.search-box button{
+  padding:10px 14px;
+}
+.search-box a{
+  margin-left:10px;
+}
+
+/* ---------- TABLE ---------- */
+table{
+  width:100%;
+  border-collapse:collapse;
+  background:#fff;
+}
+th,td{
+  padding:12px;
+  border:1px solid #ddd;
+  text-align:center;
+}
+th{
+  background:#0d6efd;
+  color:#fff;
+}
+tr.low-stock{background:#fff3cd}
+tr.critical-stock{background:#f8d7da}
+
+/* ---------- BUTTONS ---------- */
+.btn{
+  padding:8px 14px;
+  border-radius:6px;
+  color:#fff;
+  text-decoration:none;
+  font-weight:bold;
+  display:inline-block;
+  min-width:90px;
+  text-align:center;
+}
+.download{background:#6c757d}
+.edit{background:#17a2b8}
+.history{background:#343a40}
+.delete{
+  background:#dc3545;
+  border:none;
+  cursor:pointer;
+}
+
+/* ---------- MODAL ---------- */
+.modal{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.4);
+  justify-content:center;
+  align-items:center;
+  z-index:1000;
+}
+.modal-content{
+  background:#fff;
+  width:420px;
+  border-radius:12px;
+  padding:16px;
+}
+.modal-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:10px;
+}
+.close-btn{
+  cursor:pointer;
+  font-size:18px;
+}
+
+/* ---------- TIMELINE ---------- */
+.timeline{
+  position:relative;
+  margin-left:20px;
+}
+.timeline::before{
+  content:'';
+  position:absolute;
+  left:6px;
+  top:0;
+  bottom:0;
+  width:2px;
+  background:#0d6efd;
+}
+.event{
+  display:flex;
+  gap:12px;
+  margin-bottom:14px;
+}
+.dot{
+  width:12px;
+  height:12px;
+  background:#0d6efd;
+  border-radius:50%;
+  margin-top:6px;
+}
+.content{
+  background:#f8f9fa;
+  padding:10px;
+  border-radius:8px;
+  width:100%;
+}
+.time{font-size:12px;color:#666}
+.action{color:#ff9800;font-weight:bold}
+.qty{font-size:14px}
+</style>
 </head>
+
 <body>
-<div class="container">
-  <div class="topbar">
-    <h2>Product Inventory</h2>
-    <div style="display:flex;gap:10px;align-items:center">
-      <a href="<%= request.getContextPath() %>/addProduct.jsp" class="btn">+ Add Product</a>
-      <a href="<%= request.getContextPath() %>/testdb" class="muted">(Test DB)</a>
-    </div>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="brand">
+    <div class="logo"><i class="fa-solid fa-box"></i></div>
+    SmartQR WMS
   </div>
-
-  <% if (flashMsg != null) { %>
-    <div class="flash-success"><%= flashMsg %></div>
-  <% } %>
-  <% if (flashError != null) { %>
-    <div class="flash-error"><%= flashError %></div>
-  <% } %>
-
-  <div style="margin-bottom:12px">
-    <form method="get" action="listProducts.jsp" class="searchbar">
-      <input type="text" name="q" placeholder="Search SKU or name"
-             value="<%= (q==null) ? "" : q %>"
-             style="padding:8px;border-radius:6px;border:1px solid #ccc;width:320px"/>
-      <button type="submit" class="smallbtn">Search</button>
-      <a href="listProducts.jsp" style="margin-left:8px;color:#666;text-decoration:underline">Clear</a>
-    </form>
-  </div>
-
-  <table>
-    <tr>
-      <th>SKU</th>
-      <th>Name</th>
-      <th>Qty</th>
-      <th>QR Code</th>
-      <th>Actions</th>
-      <th>Created</th>
-      <th>Updated</th>
-    </tr>
-
-  <% if (rows.isEmpty()) { %>
-    <tr><td colspan="7">No products found.</td></tr>
-  <% } else {
-       for (Map<String,Object> r : rows) {
-           int id = (Integer) r.get("id");
-           String sku = (String) r.get("sku");
-           String name = (String) r.get("name");
-           int qty = (Integer) r.get("quantity");
-           String qrPath = (String) r.get("qr_path");
-           String created = (String) r.get("created_at");
-           String updated = (String) r.get("updated_at");
-           String webPath = "";
-           if (qrPath != null && !qrPath.trim().isEmpty()) {
-               webPath = qrPath.startsWith("/") ? (request.getContextPath() + qrPath) : (request.getContextPath() + "/" + qrPath);
-           }
-  %>
-    <tr>
-      <td><%= sku %></td>
-      <td><%= name %></td>
-      <td><%= qty %></td>
-      <td>
-        <% if (!webPath.isEmpty()) { %>
-          <a href="<%= webPath %>" target="_blank"><img class="qr" src="<%= webPath %>" alt="QR for <%= sku %>"/></a>
-        <% } else { %>
-          <span class="muted">No QR</span>
-        <% } %>
-      </td>
-      <td>
-        <% if (!webPath.isEmpty()) { %>
-          <a class="action-btn download-btn" href="<%= webPath %>" download>Download</a>
-        <% } %>
-
-        <form method="post" action="<%= request.getContextPath() %>/generateQR" style="display:inline">
-          <input type="hidden" name="productId" value="<%= id %>"/>
-          <button class="action-btn regenerate-btn" type="submit"><%= (webPath.isEmpty()) ? "Generate QR" : "Regenerate" %></button>
-        </form>
-
-        <a class="action-btn edit-btn" href="<%= request.getContextPath() %>/editProduct.jsp?id=<%= id %>">Edit</a>
-
-        <form method="post" action="<%= request.getContextPath() %>/deleteProduct" style="display:inline" onsubmit="return confirm('Delete this product?');">
-          <input type="hidden" name="productId" value="<%= id %>"/>
-          <button class="action-btn delete-btn" type="submit">Delete</button>
-        </form>
-      </td>
-      <td><%= created %></td>
-      <td><%= updated %></td>
-    </tr>
-  <%   } // end for
-     } // end else
-  %>
-
-  </table>
+  <a href="addProduct.jsp" class="add-btn">+ Add Product</a>
 </div>
+
+<h2 style="text-align:center">PRODUCT INVENTORY</h2>
+
+<%
+Connection conn = DBConnection.getConnection();
+Statement st = conn.createStatement();
+
+ResultSet rsAll = st.executeQuery("SELECT COUNT(*) FROM products");
+rsAll.next();
+int total = rsAll.getInt(1);
+
+ResultSet rsLow = st.executeQuery("SELECT COUNT(*) FROM products WHERE quantity BETWEEN 6 AND 15");
+rsLow.next();
+int low = rsLow.getInt(1);
+
+ResultSet rsCritical = st.executeQuery("SELECT COUNT(*) FROM products WHERE quantity <=5");
+rsCritical.next();
+int critical = rsCritical.getInt(1);
+%>
+
+<!-- DASHBOARD -->
+<div class="cards">
+  <div class="card total">Total Products<br><span><%=total%></span></div>
+  <div class="card low">Low Stock<br><span><%=low%></span></div>
+  <div class="card critical">Critical Stock<br><span><%=critical%></span></div>
+</div>
+
+<!-- SEARCH -->
+<div class="search-box">
+<form method="get">
+  <input type="text" name="q" placeholder="Search SKU or name"
+         value="<%= request.getParameter("q")==null?"":request.getParameter("q") %>">
+  <button type="submit">Search</button>
+  <a href="listProducts.jsp">Clear</a>
+</form>
+</div>
+
+<table>
+<tr>
+  <th>SKU</th>
+  <th>Name</th>
+  <th>Qty</th>
+  <th>QR</th>
+  <th>Actions</th>
+  <th>Created</th>
+  <th>Updated</th>
+</tr>
+
+<%
+String q = request.getParameter("q");
+PreparedStatement ps;
+if(q!=null && !q.isEmpty()){
+  ps = conn.prepareStatement(
+    "SELECT * FROM products WHERE sku LIKE ? OR name LIKE ? ORDER BY updated_at DESC");
+  ps.setString(1,"%"+q+"%");
+  ps.setString(2,"%"+q+"%");
+}else{
+  ps = conn.prepareStatement("SELECT * FROM products ORDER BY updated_at DESC");
+}
+
+ResultSet rs = ps.executeQuery();
+
+while(rs.next()){
+  int qty = rs.getInt("quantity");
+  String rowClass = qty<=5 ? "critical-stock" : (qty<=15?"low-stock":"");
+%>
+
+<tr class="<%=rowClass%>">
+  <td><%=rs.getString("sku")%></td>
+  <td><%=rs.getString("name")%></td>
+  <td><%=qty%></td>
+  <td><img src="<%=request.getContextPath()+"/"+rs.getString("qr_path")%>" width="70"></td>
+  <td>
+    <a class="btn download" href="<%=request.getContextPath()+"/"+rs.getString("qr_path")%>" download>Download</a>
+    <a class="btn edit" href="editProduct.jsp?id=<%=rs.getInt("id")%>">Edit</a>
+    <button class="btn history" onclick="openHistory(<%=rs.getInt("id")%>)">History</button>
+    <form action="<%=request.getContextPath()%>/deleteProduct" method="post" style="display:inline"
+          onsubmit="return confirm('Delete product?');">
+      <input type="hidden" name="productId" value="<%=rs.getInt("id")%>">
+      <button class="btn delete">Delete</button>
+    </form>
+  </td>
+  <td><%=rs.getTimestamp("created_at")%></td>
+  <td><%=rs.getTimestamp("updated_at")%></td>
+</tr>
+
+<% } %>
+</table>
+
+<!-- HISTORY MODAL -->
+<div class="modal" id="historyModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <b><i class="fa-solid fa-clock-rotate-left"></i> Stock History</b>
+      <span class="close-btn" onclick="closeHistory()">
+        <i class="fa-solid fa-arrow-left"></i>
+      </span>
+    </div>
+    <div id="historyBody"></div>
+  </div>
+</div>
+
+<script>
+function openHistory(id){
+  fetch('<%=request.getContextPath()%>/history?productId='+id)
+    .then(res=>res.text())
+    .then(html=>{
+      document.getElementById('historyBody').innerHTML = html;
+      document.getElementById('historyModal').style.display='flex';
+    });
+}
+function closeHistory(){
+  document.getElementById('historyModal').style.display='none';
+}
+</script>
+
 </body>
 </html>
