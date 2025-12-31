@@ -67,4 +67,93 @@ Every product action (creation or quantity update) is logged permanently in the 
 
 ## 🗂️ Project Structure
 
+Smart QR Warehouse Management System
+│
+├── src/main/java
+│ └── com.sqwms.servlet
+│ ├── AddProductServlet.java
+│ ├── UpdateProductServlet.java
+│ ├── DeleteProductServlet.java
+│ ├── ViewProductServlet.java
+│ ├── GenerateQRServlet.java
+│ ├── HistoryServlet.java
+│ ├── StockHistoryServlet.java
+│ └── TestDBServlet.java
+│
+├── src/main/java/com/sqwms/util
+│ ├── DBConnection.java
+│ ├── QRGenerator.java
+│ └── StockUtil.java
+│
+├── src/main/webapp
+│ ├── WEB-INF
+│ ├── qr_codes
+│ ├── listproducts.jsp
+│ ├── addProduct.jsp
+│ ├── editProduct.jsp
+│ └── index.jsp
+│
+└── README.md
+
+pgsql
+Copy code
+
+---
+
+## 🧮 Database Schema
+
+### products
+```
+CREATE TABLE products (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  sku VARCHAR(50) UNIQUE,
+  name VARCHAR(100),
+  quantity INT,
+  qr_path VARCHAR(255),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ON UPDATE CURRENT_TIMESTAMP
+);
+```
+
+stock_history
+```
+CREATE TABLE stock_history (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  product_id INT,
+  sku VARCHAR(50),
+  old_qty INT,
+  new_qty INT,
+  action VARCHAR(50),
+  changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+▶️ How to Run the Project
+
+Clone the repository
+```
+git clone https://github.com/Thamizh-25/employee-management-system.git
+```
+Import the project into Eclipse
+
+Configure Apache Tomcat 10
+
+Update database credentials in DBConnection.java
+
+Create database tables in MySQL
+
+Run the project on the server
+
+Application URL
+```
+http://10.227.174.133:8080/Smart_QR_Warehouse_Management_System/listProducts.jsp?q=
+```
+
+👤 Author
+Thamizh Selvan C
+3rd Year B.Tech CSE
+SRM Institute of Science and Technology
+
+GitHub: https://github.com/Thamizh-25
+
 
