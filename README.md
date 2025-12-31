@@ -1,18 +1,214 @@
-## Getting Started
+# 📦 SmartQR Warehouse Management System (WMS)
 
-Welcome to the VS Code Java world. Here is a guideline to help you get started to write Java code in Visual Studio Code.
+SmartQR WMS is a **Java JDBC–based Warehouse Management System** built using **Servlets, JSP, MySQL, and Apache Tomcat**.  
+It provides **QR-based product identification**, **real-time inventory tracking**, and **complete stock history auditing** with a timeline view.
 
-## Folder Structure
+This project was developed and managed fully using **Eclipse IDE** and version-controlled using **Git & GitHub**.
 
-The workspace contains two folders by default, where:
+---
 
-- `src`: the folder to maintain sources
-- `lib`: the folder to maintain dependencies
+## 🚀 Project Overview
 
-Meanwhile, the compiled output files will be generated in the `bin` folder by default.
+The system helps manage warehouse products efficiently by:
+- Assigning a **unique QR code** to every product
+- Tracking **stock updates automatically**
+- Maintaining a **full audit trail** of stock changes
+- Highlighting **Low Stock** and **Critical Stock** visually
 
-> If you want to customize the folder structure, open `.vscode/settings.json` and update the related settings there.
+Every product action (creation or quantity update) is logged permanently in the `stock_history` table.
 
-## Dependency Management
+---
 
-The `JAVA PROJECTS` view allows you to manage your dependencies. More details can be found [here](https://github.com/microsoft/vscode-java-dependency#manage-dependencies).
+## 🛠️ Tech Stack
+
+- **Language:** Java
+- **Backend:** Servlets, JDBC
+- **Frontend:** JSP, HTML, CSS
+- **Database:** MySQL
+- **Server:** Apache Tomcat 10
+- **QR Code Library:** ZXing
+- **IDE:** Eclipse
+- **Version Control:** Git & GitHub
+
+---
+
+## ✨ Features
+
+### 📋 Product Management
+- Add new products
+- Edit existing products
+- Delete products
+- Automatic QR code generation
+
+### 📊 Inventory Dashboard
+- Total products count
+- Low stock count
+- Critical stock count
+- Color-coded inventory rows
+
+### 🧾 QR Code System
+- Unique QR per product
+- Downloadable QR images
+- Stored inside `/qr_codes`
+
+### 🕒 Stock History (Audit Trail)
+- Logs product creation
+- Logs every stock update
+- Timeline-style history
+- Shows:
+  - Date & Time
+  - Action type
+  - Old quantity → New quantity
+
+### 🔍 Search
+- Search products by SKU or Name
+
+---
+
+## 🗂️ Project Structure
+
+Smart QR Warehouse Management System
+│
+├── src/main/java
+│ └── com.sqwms.servlet
+│ ├── AddProductServlet.java
+│ ├── UpdateProductServlet.java
+│ ├── DeleteProductServlet.java
+│ ├── ViewProductServlet.java
+│ ├── GenerateQRServlet.java
+│ ├── HistoryServlet.java
+│ ├── StockHistoryServlet.java
+│ └── TestDBServlet.java
+│
+├── src/main/java/com/sqwms/util
+│ ├── DBConnection.java
+│ ├── QRGenerator.java
+│ └── StockUtil.java
+│
+├── src/main/webapp
+│ ├── WEB-INF
+│ ├── qr_codes
+│ ├── listproducts.jsp
+│ ├── addProduct.jsp
+│ ├── editProduct.jsp
+│ └── index.jsp
+│
+└── README.md
+
+
+---
+
+## 🧮 Database Schema
+
+### products
+```sql
+CREATE TABLE products (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  sku VARCHAR(50) UNIQUE,
+  name VARCHAR(100),
+  quantity INT,
+  qr_path VARCHAR(255),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+stock_history
+CREATE TABLE stock_history (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  product_id INT,
+  sku VARCHAR(50),
+  old_qty INT,
+  new_qty INT,
+  action VARCHAR(50),
+  changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+▶️ How to Run the Project
+
+Clone repository
+
+git clone https://github.com/Thamizh-25/employee-management-system.git
+
+
+Import project into Eclipse
+
+Configure Apache Tomcat 10
+
+Update DB credentials in DBConnection.java
+
+Create database tables in MySQL
+
+Run on server
+
+Application URL
+
+http://localhost:8080/Smart_QR_Warehouse_Management_System/
+
+🧠 How Stock History Works
+
+Product creation → logged as PRODUCT_CREATED
+
+Product quantity update → logged as STOCK_UPDATED
+
+History is fetched using HistoryServlet
+
+Displayed in a timeline format
+
+🔁 Git Commit & Push (Eclipse Workflow)
+
+Steps used to push this project to GitHub:
+
+Right-click project → Team → Commit
+
+Add commit message
+
+Commit changes
+
+Right-click project → Team → Push Branch 'master'
+
+Use HTTPS
+
+Username: Thamizh-25
+
+Password: GitHub Personal Access Token
+
+Push to remote repository
+
+GitHub shows older file timestamps because previous commits existed, but new commits are correctly recorded under commit history.
+
+🎯 Use Cases
+
+Warehouse inventory tracking
+
+Stock auditing & compliance
+
+QR-based product identification
+
+Academic / portfolio project
+
+🔮 Future Enhancements
+
+User authentication
+
+Role-based access
+
+QR scanning via mobile
+
+Export reports (PDF / Excel)
+
+REST API integration
+
+👤 Author
+
+Thamizh Selvan C
+3rd Year B.Tech CSE
+SRM Institute of Science and Technology
+
+GitHub: https://github.com/Thamizh-25
+
+✅ Project Status
+
+✔ Fully functional
+✔ GitHub committed
+✔ Submission-ready
+✔ Eclipse + Tomcat verified
